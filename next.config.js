@@ -6,6 +6,13 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "undici": false,
+    };
+    return config;
+  },
   env: {
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
