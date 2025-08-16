@@ -1,272 +1,246 @@
 # TAT Paper Generator
 
-An AI-powered exam paper generation platform that creates high-quality, course-specific exam papers using advanced language models and automated grading.
+An AI-powered student help platform that generates exam papers based on course materials and old paper styles using advanced AI and vector search capabilities.
 
-## 🚀 Features
+## Features
 
-### Core Features
-- **AI Paper Generation**: Generate exam papers using Groq API with course-specific materials
-- **Smart Grading**: Automatically grade submitted papers with detailed feedback
-- **RAG System**: Retrieval Augmented Generation using Pinecone for course materials
-- **Multiple User Roles**: Super Admin, Team Member, and Student roles
-- **Subscription Plans**: Free, Medium, and Pro plans with different limits
-- **Course Management**: Upload course materials, syllabi, and past papers
-- **Paper Variants**: Generate multiple variants of the same paper
-- **Real-time Analytics**: Track performance and usage statistics
+- **AI Paper Generation**: Generate exam papers using Groq API with RAG (Retrieval Augmented Generation)
+- **PDF Text Extraction**: Extract text from uploaded PDF materials and store in Qdrant vector database
+- **Course Management**: Create and manage courses with detailed information
+- **Material Upload**: Upload course materials (syllabus, old papers, references) as PDFs
+- **Vector Search**: Use Qdrant for semantic search of course materials
+- **User Management**: Three user roles - Super Admin, Team, and Student
+- **Subscription Plans**: Free, Medium, and Pro tiers with usage limits
+- **Payment Integration**: Stripe integration for subscription management
+- **AI Grading**: Grade uploaded student papers with AI feedback
 
-### Technical Features
-- **Next.js 14**: Modern React framework with App Router
-- **TypeScript**: Type-safe development
-- **Prisma ORM**: Database management with PostgreSQL
-- **NextAuth.js**: Authentication and session management
-- **Stripe Integration**: Payment processing and subscription management
-- **Tailwind CSS**: Modern, responsive UI design
-- **Pinecone**: Vector database for RAG system
-- **Groq API**: Ultra-fast AI inference for paper generation
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes, Prisma ORM
 - **Database**: PostgreSQL
 - **Authentication**: NextAuth.js
-- **AI/ML**: Groq API, Pinecone Vector Database
+- **AI/ML**: Groq API, OpenAI Embeddings
+- **Vector Database**: Qdrant
 - **Payments**: Stripe
-- **File Processing**: PDF parsing, DOCX processing
-- **Deployment**: Vercel (recommended)
+- **File Processing**: pdf-parse, mammoth
 
-## 📋 Prerequisites
+## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+ and npm
 - PostgreSQL database
+- Qdrant vector database (local or cloud)
+- OpenAI API key (for embeddings)
 - Groq API key
-- Pinecone API key
-- Stripe account and API keys
+- Stripe account
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Clone the Repository
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd tat-paper-generator
+   ```
 
-```bash
-git clone <repository-url>
-cd tat-paper-generator
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 2. Install Dependencies
+3. **Set up environment variables**
+   Create a `.env.local` file with the following variables:
+   ```env
+   # Database
+   DATABASE_URL="postgresql://username:password@localhost:5432/tat_paper_generator"
 
-```bash
-npm install
-```
+   # NextAuth
+   NEXTAUTH_SECRET="your-nextauth-secret-key"
+   NEXTAUTH_URL="http://localhost:3000"
 
-### 3. Environment Setup
+   # Groq API
+   GROQ_API_KEY="your-groq-api-key"
 
-Copy the example environment file and configure your variables:
+   # OpenAI (for embeddings)
+   OPENAI_API_KEY="your-openai-api-key"
 
-```bash
-cp env.example .env.local
-```
+   # Qdrant Vector Database
+   QDRANT_URL="http://localhost:6333"
+   QDRANT_API_KEY="your-qdrant-api-key"
 
-Fill in your environment variables:
+   # Stripe
+   STRIPE_SECRET_KEY="sk_test_your-stripe-secret-key"
+   STRIPE_PUBLISHABLE_KEY="pk_test_your-stripe-publishable-key"
+   STRIPE_WEBHOOK_SECRET="whsec_your-stripe-webhook-secret"
 
-```env
-# Database
-DATABASE_URL="postgresql://username:password@localhost:5432/tat_paper_generator"
+   # File Upload (for local development)
+   UPLOAD_DIR="./uploads"
+   ```
 
-# NextAuth
-NEXTAUTH_SECRET="your-nextauth-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
+4. **Set up the database**
+   ```bash
+   # Generate Prisma client
+   npm run db:generate
 
-# Groq API
-GROQ_API_KEY="your-groq-api-key"
+   # Push schema to database
+   npm run db:push
 
-# Stripe
-STRIPE_SECRET_KEY="sk_test_your-stripe-secret-key"
-STRIPE_PUBLISHABLE_KEY="pk_test_your-stripe-publishable-key"
-STRIPE_WEBHOOK_SECRET="whsec_your-stripe-webhook-secret"
+   # Initialize with sample data
+   npm run setup
+   ```
 
-# Pinecone
-PINECONE_API_KEY="your-pinecone-api-key"
-PINECONE_ENVIRONMENT="gcp-starter"
-PINECONE_INDEX_NAME="tat-paper-generator"
+5. **Start Qdrant (if running locally)**
+   ```bash
+   # Using Docker
+   docker run -p 6333:6333 qdrant/qdrant
+   ```
 
-# File Upload
-UPLOAD_DIR="./uploads"
-```
+6. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-### 4. Database Setup
+7. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-```bash
-# Generate Prisma client
-npm run db:generate
-
-# Push schema to database
-npm run db:push
-
-# (Optional) Open Prisma Studio
-npm run db:studio
-```
-
-### 5. Run the Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the application.
-
-## 📚 Usage Guide
-
-### For Students
-
-1. **Sign Up/Login**: Create an account or sign in
-2. **Browse Courses**: View available courses and enroll
-3. **Generate Papers**: Select course, topics, and specifications
-4. **Submit for Grading**: Upload completed papers (PDF/DOC)
-5. **View Results**: Get detailed feedback and scores
-
-### For Teachers/Team Members
-
-1. **Create Courses**: Add new courses with materials
-2. **Upload Content**: Add syllabi, past papers, and notes
-3. **Generate Papers**: Create exam papers for students
-4. **Review Submissions**: Monitor student submissions and grades
+## Usage Guide
 
 ### For Super Admins
+- Access admin dashboard at `/admin`
+- Create and manage courses
+- Upload course materials (PDFs)
+- Manage teams and users
+- Configure subscription plans
+- View platform analytics
 
-1. **User Management**: Manage all users and roles
-2. **Course Oversight**: Monitor all courses and materials
-3. **Analytics**: View platform-wide statistics
-4. **System Configuration**: Configure plans and features
+### For Team Members
+- Access admin dashboard at `/admin`
+- Create and manage courses
+- Upload course materials
+- View assigned students
 
-## 🏗️ Project Structure
+### For Students
+- Browse available courses
+- Generate exam papers based on course materials
+- Upload completed papers for AI grading
+- View grading results and feedback
+
+## Project Structure
 
 ```
-tat-paper-generator/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── auth/              # Authentication pages
-│   ├── dashboard/         # Dashboard pages
-│   ├── papers/            # Paper management
-│   └── globals.css        # Global styles
-├── components/            # React components
-├── lib/                   # Utility libraries
-│   ├── prisma.ts         # Database client
-│   ├── groq.ts           # AI API client
-│   ├── pinecone.ts       # Vector database
-│   └── stripe.ts         # Payment processing
-├── prisma/               # Database schema
-├── uploads/              # File uploads
-└── public/               # Static assets
+├── app/
+│   ├── admin/                 # Admin dashboard pages
+│   ├── api/                   # API routes
+│   │   ├── admin/            # Admin API endpoints
+│   │   ├── auth/             # Authentication endpoints
+│   │   └── papers/           # Paper generation endpoints
+│   ├── auth/                 # Authentication pages
+│   ├── dashboard/            # User dashboard
+│   └── papers/               # Paper generation pages
+├── components/
+│   ├── admin/                # Admin dashboard components
+│   └── ui/                   # Reusable UI components
+├── lib/                      # Utility libraries
+│   ├── groq.ts              # Groq API integration
+│   ├── qdrant.ts            # Qdrant vector database
+│   ├── prisma.ts            # Prisma client
+│   └── stripe.ts            # Stripe integration
+├── prisma/                   # Database schema and migrations
+├── scripts/                  # Setup and utility scripts
+└── types/                    # TypeScript type definitions
 ```
 
-## 🔧 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/auth/signup` - User registration
-- `GET/POST /api/auth/[...nextauth]` - NextAuth endpoints
+- `POST /api/auth/signin` - User login
+- `GET /api/auth/session` - Get current session
+
+### Admin
+- `GET /api/admin/stats` - Platform statistics
+- `GET /api/admin/courses` - List all courses
+- `POST /api/admin/courses` - Create new course
+- `PUT /api/admin/courses/[id]` - Update course
+- `DELETE /api/admin/courses/[id]` - Delete course
+- `GET /api/admin/materials` - List all materials
+- `POST /api/admin/materials/upload` - Upload material with PDF processing
+- `GET /api/admin/students` - List all users
+- `GET /api/admin/teams` - List all teams
 
 ### Papers
-- `POST /api/papers/generate` - Generate new paper
-- `POST /api/papers/grade` - Grade submitted paper
-- `GET /api/papers` - List user's papers
+- `POST /api/papers/generate` - Generate exam paper
+- `POST /api/papers/grade` - Grade uploaded paper
 
-### Courses
-- `GET /api/courses` - List available courses
-- `POST /api/courses` - Create new course
-- `GET /api/courses/[id]` - Get course details
+## AI Paper Generation
 
-### Dashboard
-- `GET /api/dashboard/stats` - User statistics
+The system uses a sophisticated RAG (Retrieval Augmented Generation) approach:
 
-## 🎯 AI Paper Generation
+1. **Material Upload**: PDFs are uploaded and text is extracted
+2. **Vector Storage**: Text content is embedded and stored in Qdrant
+3. **Semantic Search**: When generating papers, relevant materials are retrieved
+4. **AI Generation**: Groq API generates papers based on retrieved context
+5. **Quality Control**: Papers follow specific formatting and style guidelines
 
-The system uses a sophisticated prompt engineering approach:
+### Paper Generation Process
 
-1. **Context Retrieval**: Search course materials using Pinecone RAG
-2. **Style Analysis**: Analyze historical paper styles and patterns
-3. **Content Generation**: Use Groq API to generate questions
-4. **Quality Control**: Ensure originality and academic standards
-5. **Formatting**: Structure papers according to course requirements
+1. User selects course and specifies requirements
+2. System searches Qdrant for relevant course materials
+3. Retrieved materials are used as context for AI generation
+4. Groq API generates paper following specified format
+5. Generated paper is saved and made available to user
 
-### Paper Generation Prompt
+## Database Schema
 
-The system uses a comprehensive prompt that includes:
-- Course specifications and requirements
-- Historical paper styles and patterns
-- Topic coverage and difficulty distribution
-- Academic integrity guidelines
-- Output formatting requirements
+The application uses PostgreSQL with the following main entities:
 
-## 📊 Database Schema
+- **Users**: User accounts with roles and subscription plans
+- **Courses**: Course information and metadata
+- **CourseMaterials**: Uploaded materials with extracted text
+- **PaperRequests**: Generated paper requests and metadata
+- **PaperSubmissions**: Student submissions for grading
+- **Teams**: Team management for collaborative features
 
-### Core Tables
-- `users` - User accounts and roles
-- `courses` - Course information
-- `course_materials` - Uploaded materials
-- `paper_requests` - Paper generation requests
-- `paper_variants` - Generated paper variants
-- `paper_submissions` - Student submissions
-- `grading_results` - Grading outcomes
-- `plans` - Subscription plans
-- `stripe_subscriptions` - Payment subscriptions
+## Security
 
-## 🔒 Security Features
+- JWT-based authentication with NextAuth.js
+- Role-based access control
+- Input validation with Zod
+- Secure file upload handling
+- Environment variable protection
 
-- **Authentication**: Secure session management with NextAuth.js
-- **Authorization**: Role-based access control
-- **Data Protection**: Encrypted passwords and sensitive data
-- **API Security**: Protected API routes with session validation
-- **File Upload**: Secure file handling and validation
-
-## 🚀 Deployment
+## Deployment
 
 ### Vercel (Recommended)
-
 1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel dashboard
+2. Set up environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
 ### Other Platforms
+- Ensure PostgreSQL database is accessible
+- Set up Qdrant vector database
+- Configure environment variables
+- Set up file storage (consider cloud storage for production)
 
-The application can be deployed to any platform that supports Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
+## Support
 
 For support and questions:
 - Create an issue in the GitHub repository
-- Contact the development team
 - Check the documentation
+- Review the code comments
 
-## 🔮 Roadmap
+## Roadmap
 
-- [ ] Advanced analytics dashboard
-- [ ] Mobile application
-- [ ] Integration with LMS platforms
 - [ ] Multi-language support
-- [ ] Advanced plagiarism detection
-- [ ] Real-time collaboration features
-- [ ] API for third-party integrations
-
-## 🙏 Acknowledgments
-
-- Groq for ultra-fast AI inference
-- Pinecone for vector database services
-- Stripe for payment processing
-- Next.js team for the amazing framework
-- The open-source community for various libraries and tools
+- [ ] Advanced paper templates
+- [ ] Real-time collaboration
+- [ ] Mobile app
+- [ ] Advanced analytics
+- [ ] Integration with LMS platforms

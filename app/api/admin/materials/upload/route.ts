@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { prisma } from '@/lib/prisma'
+import { upsertCourseMaterial } from '@/lib/qdrant'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import pdf from 'pdf-parse'
+import mammoth from 'mammoth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,10 +19,15 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const courseId = formData.get('courseId') as string
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string
+    const type = formData.get('type') as string
+    const year = formData.get('year') as string
 
-    if (!file) {
+    if (!file || !courseId || !title) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'File, courseId, and title are required' },
         { status: 400 }
       )
     }
@@ -31,17 +40,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
-    const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ]
-    
-    if (!allowedTypes.includes(file.type)) {
+    // Validate file type - only PDF for now
+    if (file.type !== 'application/pdf') {
       return NextResponse.json(
-        { error: 'Only PDF, DOCX, and TXT files are allowed' },
+        { error: 'Only PDF files are currently supported' },
         { status: 400 }
+      )
+    }
+
+    // Verify course exists
+    const course = await prisma.course.findUnique({
+      where: { id: courseId }
+    })
+
+    if (!course) {
+      return NextResponse.json(
+        { error: 'Course not found' },
+        { status: 404 }
       )
     }
 
@@ -64,13 +79,69 @@ export async function POST(request: NextRequest) {
     
     await writeFile(filePath, buffer)
 
-    // Return the file URL (in production, this would be a cloud storage URL)
-    const fileUrl = `/uploads/${fileName}`
+    // Extract text from PDF
+    let extractedText = ''
+    try {
+      const pdfData = await pdf(buffer)
+      extractedText = pdfData.text
+      
+      if (!extractedText.trim()) {
+        return NextResponse.json(
+          { error: 'Could not extract text from PDF. Please ensure the PDF contains readable text.' },
+          { status: 400 }
+        )
+      }
+    } catch (error) {
+      console.error('Error extracting text from PDF:', error)
+      return NextResponse.json(
+        { error: 'Failed to extract text from PDF' },
+        { status: 500 }
+      )
+    }
+
+    // Create material record in database
+    const material = await prisma.courseMaterial.create({
+      data: {
+        courseId,
+        title,
+        description: description || null,
+        type: type as 'SYLLABUS' | 'OLD_PAPER' | 'REFERENCE',
+        fileUrl: `/uploads/${fileName}`,
+        fileSize: file.size,
+        content: extractedText,
+        year: year ? parseInt(year) : null,
+        uploadedById: session.user.id,
+      }
+    })
+
+    // Store in Qdrant for vector search
+    try {
+      await upsertCourseMaterial({
+        id: material.id,
+        courseId: material.courseId,
+        title: material.title,
+        description: material.description || undefined,
+        type: material.type as 'SYLLABUS' | 'OLD_PAPER' | 'REFERENCE',
+        content: material.content || '',
+        year: material.year || undefined,
+        weightings: material.weightings,
+        styleNotes: material.styleNotes || undefined,
+      })
+    } catch (qdrantError) {
+      console.error('Error storing in Qdrant:', qdrantError)
+      // Continue even if Qdrant fails - the material is still saved in the database
+    }
 
     return NextResponse.json({ 
-      fileUrl,
-      fileName,
-      fileSize: file.size
+      success: true,
+      material: {
+        id: material.id,
+        title: material.title,
+        fileUrl: material.fileUrl,
+        fileSize: material.fileSize,
+        type: material.type,
+        contentLength: extractedText.length,
+      }
     })
   } catch (error) {
     console.error('Error uploading file:', error)

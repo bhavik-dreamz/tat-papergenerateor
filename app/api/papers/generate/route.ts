@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { generatePaper } from '@/lib/groq'
-import { searchCourseMaterials } from '@/lib/pinecone'
+import { searchCourseMaterials } from '@/lib/qdrant'
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,12 +77,12 @@ export async function POST(request: NextRequest) {
     // Prepare context for AI
     const context = ragResults.map(result => ({
       id: result.id,
-      type: result.metadata.type,
-      title: result.metadata.title,
-      year: result.metadata.year,
-      weightings: result.metadata.weightings ? JSON.parse(result.metadata.weightings) : null,
-      style_notes: result.metadata.styleNotes,
-      excerpt: result.metadata.content.substring(0, 500),
+      type: result.payload.type,
+      title: result.payload.title,
+      year: result.payload.year,
+      weightings: result.payload.weightings,
+      style_notes: result.payload.styleNotes,
+      excerpt: result.payload.content.substring(0, 500),
       source_uri: result.id,
       relevance_score: result.score
     }))

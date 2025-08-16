@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { deleteCourseMaterial } from '@/lib/qdrant'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
 
@@ -110,6 +111,14 @@ export async function DELETE(
       )
     }
 
+    // Delete from Qdrant first
+    try {
+      await deleteCourseMaterial(params.id)
+    } catch (qdrantError) {
+      console.error('Error deleting from Qdrant:', qdrantError)
+      // Continue with database deletion even if Qdrant deletion fails
+    }
+
     // Delete the file from storage if it exists
     if (existingMaterial.fileUrl && existingMaterial.fileUrl.startsWith('/uploads/')) {
       try {
@@ -125,6 +134,7 @@ export async function DELETE(
       }
     }
 
+    // Delete from database
     await prisma.courseMaterial.delete({
       where: { id: params.id }
     })

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
@@ -277,12 +278,13 @@ export default function CourseManagement() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleEdit(course)}
+                    <Link
+                      href={`/admin/courses/${course.id}/edit`}
                       className="text-gray-400 hover:text-gray-500"
+                      title="Edit course"
                     >
                       <PencilIcon className="h-5 w-5" />
-                    </button>
+                    </Link>
                     <button
                       onClick={() => handleDelete(course.id)}
                       className="text-gray-400 hover:text-red-500"
