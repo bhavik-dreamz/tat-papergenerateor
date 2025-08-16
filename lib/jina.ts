@@ -11,7 +11,6 @@ const jinaClient = axios.create({
 export interface JinaEmbeddingRequest {
   model: string
   input: string | string[]
-  encoding_format?: 'float' | 'base64'
   task?: 'retrieval.query' | 'retrieval.passage' | 'text-matching' | 'classification'
 }
 
@@ -44,14 +43,12 @@ export async function generateEmbeddings(
   options: {
     model?: string
     task?: 'retrieval.query' | 'retrieval.passage' | 'text-matching' | 'classification'
-    encoding_format?: 'float' | 'base64'
   } = {}
 ): Promise<number[][]> {
   try {
     const {
       model = 'jina-embeddings-v3', // Updated to v3 as per demo
       task = 'text-matching', // Updated to text-matching as per demo
-      encoding_format = 'float'
     } = options
 
     // Validate environment variables
@@ -62,15 +59,26 @@ export async function generateEmbeddings(
     console.log('Generating embeddings with Jina AI...', {
       model,
       task,
-      textLength: Array.isArray(text) ? text.length : text.length
+      textLength: Array.isArray(text) ? text.length : text.length,
+      textPreview: Array.isArray(text) ? text[0]?.substring(0, 100) : text.substring(0, 100),
+      isArray: Array.isArray(text)
     })
 
-    const response = await jinaClient.post<JinaEmbeddingResponse>('/embeddings', {
+    const requestPayload = {
       model,
       input: text, // Can be string or array as per demo
-      task,
-      encoding_format
+      task
+      // Removed encoding_format - it's not allowed and defaults to float anyway
+    }
+
+    console.log('Jina API request payload:', {
+      ...requestPayload,
+      input: Array.isArray(text) 
+        ? `[Array of ${text.length} items, first: "${text[0]?.substring(0, 50)}..."]`
+        : `"${text.substring(0, 50)}..."`
     })
+
+    const response = await jinaClient.post<JinaEmbeddingResponse>('/embeddings', requestPayload)
 
     if (!response.data || !response.data.data || response.data.data.length === 0) {
       throw new Error('No embedding data returned from Jina AI')
@@ -83,8 +91,12 @@ export async function generateEmbeddings(
     if (error instanceof Error) {
       if ('response' in error) {
         const axiosError = error as any
-        console.error('Response status:', axiosError.response?.status)
-        console.error('Response data:', axiosError.response?.data)
+        console.error('Jina API Error Details:')
+        console.error('- Status:', axiosError.response?.status)
+        console.error('- Status Text:', axiosError.response?.statusText)
+        console.error('- Response Data:', JSON.stringify(axiosError.response?.data, null, 2))
+        console.error('- Request URL:', axiosError.config?.url)
+        console.error('- Request Method:', axiosError.config?.method)
       }
       throw new Error(`Failed to generate embeddings: ${error.message}`)
     } else {

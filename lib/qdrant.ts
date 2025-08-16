@@ -2,12 +2,39 @@ import { QdrantClient } from '@qdrant/js-client-rest'
 import { prisma } from './prisma'
 import { generateEmbeddings } from './jina'
 
+// Check if Qdrant is enabled in environment
+export const isQdrantEnabled = () => process.env.QDRANT_ENABLED === 'true'
+
+// Parse URL to extract host and port for QdrantClient
+function parseQdrantUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url)
+    return {
+      host: parsedUrl.hostname,
+      port: parseInt(parsedUrl.port) || (parsedUrl.protocol === 'https:' ? 443 : 6333),
+      https: parsedUrl.protocol === 'https:'
+    }
+  } catch {
+    // Fallback for localhost
+    return {
+      host: 'localhost',
+      port: 6333,
+      https: false
+    }
+  }
+}
+
+const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333'
+const { host, port, https } = parseQdrantUrl(qdrantUrl)
+
 const qdrant = new QdrantClient({
-  url: process.env.QDRANT_URL || 'http://localhost:6333',
+  host,
+  port,
+  https,
   apiKey: process.env.QDRANT_API_KEY,
-  timeout: 30000, // 30 second timeout
-  // Skip version compatibility check to avoid the warning
-  checkCompatibility: false,
+  // Additional configuration that might help with connection issues
+  timeout: 60000, // Increased timeout to 60 seconds
+  checkCompatibility: false, // Skip version compatibility check
 })
 
 // Retry configuration
@@ -116,9 +143,22 @@ async function generateEmbedding(text: string): Promise<number[]> {
       throw new Error('Text content is empty or invalid')
     }
 
+    // Log the input for debugging
+    console.log('Input text for embedding:', {
+      length: text.length,
+      preview: text.substring(0, 200),
+      type: typeof text,
+      isEmpty: text.trim().length === 0
+    })
+
     // Truncate text if it's too long (Jina has token limits)
-    const maxLength = 8000 // Conservative limit for safety
+    // Jina v3 typically handles up to 8192 tokens, but let's be conservative
+    const maxLength = 6000 // Conservative limit for safety
     const truncatedText = text.length > maxLength ? text.substring(0, maxLength) : text
+
+    if (truncatedText !== text) {
+      console.log(`⚠️ Text truncated from ${text.length} to ${truncatedText.length} characters`)
+    }
 
     console.log('Generating embedding for text of length:', truncatedText.length)
 
@@ -146,14 +186,12 @@ export async function upsertCourseMaterial(material: CourseMaterial) {
     
     console.log('Starting Qdrant upsert process for material:', material.title)
     
-    // Test Qdrant connection first with retry
+    // Test Qdrant connection first (without retry for faster failure)
     try {
-      await retryAsync(async () => {
-        return await qdrant.getCollections()
-      })
+      await qdrant.getCollections()
       console.log('✅ Qdrant connection successful')
     } catch (connectionError) {
-      console.error('❌ Qdrant connection failed after retries:', connectionError)
+      console.error('❌ Qdrant connection failed:', connectionError)
       const errorMessage = connectionError instanceof Error ? connectionError.message : 'Unknown connection error'
       throw new Error(`Qdrant connection failed: ${errorMessage}`)
     }

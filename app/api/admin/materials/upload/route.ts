@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { upsertCourseMaterial } from '@/lib/qdrant'
+import { upsertCourseMaterial, isQdrantEnabled } from '@/lib/qdrant'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -114,25 +114,31 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Store in Qdrant for vector search (optional - continue if it fails)
-    try {
-      await upsertCourseMaterial({
-        id: material.id,
-        courseId: material.courseId,
-        title: material.title,
-        description: material.description || undefined,
-        type: material.type as 'SYLLABUS' | 'OLD_PAPER' | 'REFERENCE',
-        content: material.content || '',
-        year: material.year || undefined,
-        weightings: material.weightings,
-        styleNotes: material.styleNotes || undefined,
-      })
-      console.log('✅ Successfully stored material in Qdrant vector database');
-    } catch (qdrantError) {
-      const errorMessage = qdrantError instanceof Error ? qdrantError.message : 'Unknown error';
-      console.error('⚠️ Warning: Could not store in Qdrant vector database:', errorMessage);
-      console.log('📝 Material saved in main database successfully - vector search will be unavailable for this material');
-      // Continue even if Qdrant fails - the material is still saved in the database
+    // Store in Qdrant for vector search (only if enabled)
+    if (isQdrantEnabled()) {
+      try {
+        console.log('🔄 Qdrant is enabled, attempting to store material in vector database...')
+        await upsertCourseMaterial({
+          id: material.id,
+          courseId: material.courseId,
+          title: material.title,
+          description: material.description || undefined,
+          type: material.type as 'SYLLABUS' | 'OLD_PAPER' | 'REFERENCE',
+          content: material.content || '',
+          year: material.year || undefined,
+          weightings: material.weightings,
+          styleNotes: material.styleNotes || undefined,
+        })
+        console.log('✅ Successfully stored material in Qdrant vector database');
+      } catch (qdrantError) {
+        const errorMessage = qdrantError instanceof Error ? qdrantError.message : 'Unknown error';
+        console.error('⚠️ Warning: Could not store in Qdrant vector database:', errorMessage);
+        console.log('📝 Material saved in main database successfully - vector search will be unavailable for this material');
+        // Continue even if Qdrant fails - the material is still saved in the database
+      }
+    } else {
+      console.log('ℹ️ Qdrant is disabled in environment variables - skipping vector database storage')
+      console.log('📝 Material saved in main database successfully (vector search not available)')
     }
 
     return NextResponse.json({ 
