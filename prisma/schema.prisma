@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -45,23 +45,24 @@ enum Difficulty {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  password      String
-  role          UserRole  @default(STUDENT)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  plan          Plan?
-  courses       CourseEnrollment[]
-  paperRequests PaperRequest[]
-  submissions   PaperSubmission[]
-  createdCourses Course[] @relation("CourseCreator")
-  uploadedMaterials CourseMaterial[] @relation("MaterialUploader")
-  createdTeams  Team[] @relation("TeamCreator")
-  teamMemberships TeamMember[]
+  planId            String?
+  courses           CourseEnrollment[]
+  paperRequests     PaperRequest[]
+  submissions       PaperSubmission[]
+  createdCourses    Course[]           @relation("CourseCreator")
+  uploadedMaterials CourseMaterial[]   @relation("MaterialUploader")
+  createdTeams      Team[]             @relation("TeamCreator")
+  teamMemberships   TeamMember[]
+  plan              Plan?              @relation(fields: [planId], references: [id])
 
   @@map("users")
 }
@@ -76,13 +77,14 @@ model Plan {
   maxPapersPerMonth Int
   maxVariants       Int
   includeAnswers    Boolean  @default(false)
-  features          Json     // Array of feature strings
+  features          Json // Array of feature strings
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   // Relations
-  users             User[]
+  users              User[]
+  StripeSubscription StripeSubscription[]
 
   @@map("plans")
 }
@@ -93,7 +95,7 @@ model Course {
   description       String
   code              String   @unique
   credits           Int      @default(3)
-  level             String   // e.g., "Undergraduate", "Graduate"
+  level             String // e.g., "Undergraduate", "Graduate"
   boardOrUniversity String
   language          String   @default("English")
   isActive          Boolean  @default(true)
@@ -102,69 +104,69 @@ model Course {
   createdById       String
 
   // Relations
-  createdBy         User     @relation("CourseCreator", fields: [createdById], references: [id])
-  enrollments       CourseEnrollment[]
-  materials         CourseMaterial[]
-  paperStyles       PaperStyleProfile[]
-  paperRequests     PaperRequest[]
+  createdBy     User                @relation("CourseCreator", fields: [createdById], references: [id])
+  enrollments   CourseEnrollment[]
+  materials     CourseMaterial[]
+  paperStyles   PaperStyleProfile[]
+  paperRequests PaperRequest[]
 
   @@map("courses")
 }
 
 model CourseEnrollment {
-  id        String   @id @default(cuid())
-  userId    String
-  courseId  String
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
   enrolledAt DateTime @default(now())
 
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("course_enrollments")
 }
 
 model CourseMaterial {
-  id          String   @id @default(cuid())
-  courseId    String
-  title       String
-  description String?
-  type        String   // "SYLLABUS", "OLD_PAPER", "REFERENCE"
-  fileUrl     String?
-  fileSize    Int      @default(0)
-  content     String?  // For text content
-  year        Int?     // For old papers
-  weightings  Json?    // Topic weightings
-  styleNotes  String?  // Style-specific notes
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  courseId     String
+  title        String
+  description  String?
+  type         String // "SYLLABUS", "OLD_PAPER", "REFERENCE"
+  fileUrl      String?
+  fileSize     Int      @default(0)
+  content      String? // For text content
+  year         Int? // For old papers
+  weightings   Json? // Topic weightings
+  styleNotes   String? // Style-specific notes
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   uploadedById String
 
   // Relations
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uploadedBy  User     @relation("MaterialUploader", fields: [uploadedById], references: [id])
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy User   @relation("MaterialUploader", fields: [uploadedById], references: [id])
 
   @@map("course_materials")
 }
 
 model PaperStyleProfile {
-  id          String   @id @default(cuid())
-  courseId    String
-  name        String
-  description String?
-  sections    Json     // Array of section objects
-  weightings  Json     // Topic weightings
+  id               String   @id @default(cuid())
+  courseId         String
+  name             String
+  description      String?
+  sections         Json // Array of section objects
+  weightings       Json // Topic weightings
   phrasingPatterns Json // Array of phrasing patterns
-  constraints Json?    // Array of constraints
-  exemplars   Json?    // Array of exemplar papers
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  constraints      Json? // Array of constraints
+  exemplars        Json? // Array of exemplar papers
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("paper_style_profiles")
 }
@@ -173,94 +175,94 @@ model PaperRequest {
   id              String      @id @default(cuid())
   userId          String
   courseId        String
-  examType        String      // "Midterm", "Final", "Unit Test"
+  examType        String // "Midterm", "Final", "Unit Test"
   totalMarks      Int
   durationMinutes Int
-  topicsInclude   String[]    // Array of topics
-  topicsExclude   String[]    // Array of topics to exclude
-  difficultyPref  Json?       // Difficulty preferences
-  styleOverrides  String?     // Style override notes
+  topicsInclude   Json // Array of topics as JSON
+  topicsExclude   Json // Array of topics to exclude as JSON
+  difficultyPref  Json? // Difficulty preferences
+  styleOverrides  String? // Style override notes
   status          PaperStatus @default(DRAFT)
-  seed            String?     // For reproducible generation
+  seed            String? // For reproducible generation
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   // Relations
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course          Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  variants        PaperVariant[]
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  variants PaperVariant[]
 
   @@map("paper_requests")
 }
 
 model PaperVariant {
-  id              String   @id @default(cuid())
-  paperRequestId  String
-  variantId       String   // e.g., "v1", "v2"
-  paperData       Json     // Complete generated paper JSON
-  markingScheme   Json     // Answer keys and rubrics
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  paperRequestId String
+  variantId      String // e.g., "v1", "v2"
+  paperData      Json // Complete generated paper JSON
+  markingScheme  Json // Answer keys and rubrics
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
-  paperRequest    PaperRequest    @relation(fields: [paperRequestId], references: [id], onDelete: Cascade)
-  submissions     PaperSubmission[]
+  paperRequest PaperRequest      @relation(fields: [paperRequestId], references: [id], onDelete: Cascade)
+  submissions  PaperSubmission[]
 
   @@map("paper_variants")
 }
 
 model PaperSubmission {
-  id              String   @id @default(cuid())
-  userId          String
-  paperVariantId  String
-  submittedFile   String   // File URL
-  extractedAnswers Json?   // Extracted answers from file
-  status          PaperStatus @default(SUBMITTED)
-  submittedAt     DateTime @default(now())
-  gradedAt        DateTime?
+  id               String      @id @default(cuid())
+  userId           String
+  paperVariantId   String
+  submittedFile    String // File URL
+  extractedAnswers Json? // Extracted answers from file
+  status           PaperStatus @default(SUBMITTED)
+  submittedAt      DateTime    @default(now())
+  gradedAt         DateTime?
 
   // Relations
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  paperVariant    PaperVariant @relation(fields: [paperVariantId], references: [id], onDelete: Cascade)
-  grading         GradingResult?
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paperVariant PaperVariant   @relation(fields: [paperVariantId], references: [id], onDelete: Cascade)
+  grading      GradingResult?
 
   @@map("paper_submissions")
 }
 
 model GradingResult {
-  id              String   @id @default(cuid())
-  submissionId    String   @unique
-  totalScore      Int
-  maxScore        Int
-  percentage      Float
-  grade           String   // "A", "B", "C", "D", "F", "Pass", "Fail"
-  marksBreakdown  Json     // Detailed breakdown per question
-  feedback        String?  // Overall feedback
-  autoGraded      Boolean  @default(true)
-  gradedAt        DateTime @default(now())
+  id             String   @id @default(cuid())
+  submissionId   String   @unique
+  totalScore     Int
+  maxScore       Int
+  percentage     Float
+  grade          String // "A", "B", "C", "D", "F", "Pass", "Fail"
+  marksBreakdown Json // Detailed breakdown per question
+  feedback       String? // Overall feedback
+  autoGraded     Boolean  @default(true)
+  gradedAt       DateTime @default(now())
 
   // Relations
-  submission      PaperSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submission PaperSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@map("grading_results")
 }
 
 model StripeSubscription {
-  id                String   @id
-  userId            String   @unique
-  planId            String
-  stripeCustomerId  String
+  id                   String   @id
+  userId               String   @unique
+  planId               String
+  stripeCustomerId     String
   stripeSubscriptionId String
-  status            String
-  currentPeriodStart DateTime
-  currentPeriodEnd   DateTime
-  cancelAtPeriodEnd Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relations
-  plan              Plan     @relation(fields: [planId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
 
   @@map("stripe_subscriptions")
 }
@@ -275,22 +277,22 @@ model Team {
   createdById String
 
   // Relations
-  createdBy   User     @relation("TeamCreator", fields: [createdById], references: [id])
-  members     TeamMember[]
+  createdBy User         @relation("TeamCreator", fields: [createdById], references: [id])
+  members   TeamMember[]
 
   @@map("teams")
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
-  userId    String
-  teamId    String
-  role      String   @default("MEMBER") // "ADMIN", "MEMBER"
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  teamId   String
+  role     String   @default("MEMBER") // "ADMIN", "MEMBER"
+  joinedAt DateTime @default(now())
 
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([userId, teamId])
   @@map("team_members")

@@ -11,7 +11,7 @@ export default function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'STUDENT' as 'STUDENT' | 'TEAM' | 'SUPER_ADMIN'
+    role: 'STUDENT' as 'STUDENT'
   })
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -38,6 +38,8 @@ export default function SignUpPage() {
 
     setIsLoading(true)
 
+
+
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -48,7 +50,6 @@ export default function SignUpPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role: formData.role,
         }),
       })
 
@@ -120,24 +121,7 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium leading-6 text-gray-900">
-                Role
-              </label>
-              <div className="mt-2">
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                >
-                  <option value="STUDENT">Student</option>
-                  <option value="TEAM">Team Member</option>
-                  <option value="SUPER_ADMIN">Super Admin</option>
-                </select>
-              </div>
-            </div>
+
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">

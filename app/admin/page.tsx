@@ -10,7 +10,8 @@ import {
   UsersIcon, 
   CreditCardIcon,
   ChartBarIcon,
-  CogIcon
+  CogIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline'
 import CourseManagement from '@/components/admin/CourseManagement'
 import MaterialManagement from '@/components/admin/MaterialManagement'
@@ -26,6 +27,15 @@ const tabs = [
   { name: 'Teams', icon: UserGroupIcon, component: TeamManagement },
   { name: 'Students', icon: UsersIcon, component: StudentManagement },
   { name: 'Plans', icon: CreditCardIcon, component: PlanManagement },
+]
+
+// Super Admin specific navigation links
+const superAdminLinks = [
+  { name: 'Super Admin Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
+  { name: 'Course Management', href: '/admin/courses', icon: AcademicCapIcon },
+  { name: 'Student Management', href: '/admin/students', icon: UsersIcon },
+  { name: 'Team Management', href: '/admin/teams', icon: UserGroupIcon },
+  { name: 'User Profiles', href: '/admin/profiles', icon: UserCircleIcon },
 ]
 
 export default function AdminDashboard() {
@@ -91,6 +101,32 @@ export default function AdminDashboard() {
           </nav>
         </div>
       </div>
+
+      {/* Super Admin Quick Links */}
+      {session.user.role === 'SUPER_ADMIN' && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-4">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">Super Admin Quick Access</h3>
+              <div className="flex flex-wrap gap-2">
+                {superAdminLinks.map((link) => {
+                  const Icon = link.icon
+                  return (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    >
+                      <Icon className="h-4 w-4 mr-1" />
+                      {link.name}
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
