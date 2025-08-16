@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Store in Qdrant for vector search
+    // Store in Qdrant for vector search (optional - continue if it fails)
     try {
       await upsertCourseMaterial({
         id: material.id,
@@ -127,8 +127,11 @@ export async function POST(request: NextRequest) {
         weightings: material.weightings,
         styleNotes: material.styleNotes || undefined,
       })
+      console.log('✅ Successfully stored material in Qdrant vector database');
     } catch (qdrantError) {
-      console.error('Error storing in Qdrant:', qdrantError)
+      const errorMessage = qdrantError instanceof Error ? qdrantError.message : 'Unknown error';
+      console.error('⚠️ Warning: Could not store in Qdrant vector database:', errorMessage);
+      console.log('📝 Material saved in main database successfully - vector search will be unavailable for this material');
       // Continue even if Qdrant fails - the material is still saved in the database
     }
 

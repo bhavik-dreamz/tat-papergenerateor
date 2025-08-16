@@ -5,7 +5,32 @@ import { generateEmbeddings } from './jina'
 const qdrant = new QdrantClient({
   url: process.env.QDRANT_URL || 'http://localhost:6333',
   apiKey: process.env.QDRANT_API_KEY,
+  timeout: 30000, // 30 second timeout
+  // Skip version compatibility check to avoid the warning
+  checkCompatibility: false,
 })
+
+// Retry configuration
+const RETRY_ATTEMPTS = 3
+const RETRY_DELAY = 2000 // 2 seconds
+
+// Helper function to retry async operations
+async function retryAsync<T>(
+  operation: () => Promise<T>,
+  attempts: number = RETRY_ATTEMPTS,
+  delay: number = RETRY_DELAY
+): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    if (attempts > 1) {
+      console.log(`⚠️ Operation failed, retrying in ${delay}ms... (${attempts - 1} attempts left)`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return retryAsync(operation, attempts - 1, delay)
+    }
+    throw error
+  }
+}
 
 export interface CourseMaterial {
   id: string
@@ -26,6 +51,22 @@ export interface SearchResult {
   payload: CourseMaterial
 }
 
+// Test Qdrant connection with retry logic
+export async function testQdrantConnection(): Promise<boolean> {
+  try {
+    await retryAsync(async () => {
+      const result = await qdrant.getCollections()
+      return result
+    })
+    console.log('✅ Qdrant connection test passed')
+    return true
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ Qdrant connection test failed after retries:', errorMessage)
+    return false
+  }
+}
+
 // Initialize Qdrant collection for course materials
 export async function initializeCollection(collectionName: string = 'course_materials') {
   try {
@@ -37,9 +78,10 @@ export async function initializeCollection(collectionName: string = 'course_mate
 
     if (!collectionExists) {
       // Create collection with vector configuration
+      // Note: jina-embeddings-v3 has 1024 dimensions vs v2's 768
       await qdrant.createCollection(collectionName, {
         vectors: {
-          size: 768, // Jina v2-base-en embedding size
+          size: 1024, // Updated for Jina v3 embedding size
           distance: 'Cosine',
         },
       })
@@ -69,26 +111,57 @@ export async function initializeCollection(collectionName: string = 'course_mate
 // Generate embedding using Jina AI API
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
-    const embeddings = await generateEmbeddings(text, {
-      model: 'jina-embeddings-v2-base-en',
-      task: 'retrieval.passage'
+    // Validate input
+    if (!text || text.trim().length === 0) {
+      throw new Error('Text content is empty or invalid')
+    }
+
+    // Truncate text if it's too long (Jina has token limits)
+    const maxLength = 8000 // Conservative limit for safety
+    const truncatedText = text.length > maxLength ? text.substring(0, maxLength) : text
+
+    console.log('Generating embedding for text of length:', truncatedText.length)
+
+    const embeddings = await generateEmbeddings(truncatedText, {
+      model: 'jina-embeddings-v3', // Updated to v3
+      task: 'text-matching' // Updated to text-matching
     })
     
+    if (!embeddings || embeddings.length === 0) {
+      throw new Error('No embeddings returned from Jina AI')
+    }
+
+    console.log('Successfully generated embedding with dimensions:', embeddings[0].length)
     return embeddings[0] // Return the first (and only) embedding
   } catch (error) {
     console.error('Error generating embedding:', error)
-    // Fallback: return a zero vector (you might want to handle this differently)
-    return new Array(768).fill(0) // Jina v2-base-en has 768 dimensions
+    throw error // Re-throw to handle upstream
   }
 }
 
 // Upsert course material to Qdrant
 export async function upsertCourseMaterial(material: CourseMaterial) {
   try {
-    const collectionName = 'course_materials'
+    const collectionName = process.env.QDRANT_COLLECTION || 'course_materials'
+    
+    console.log('Starting Qdrant upsert process for material:', material.title)
+    
+    // Test Qdrant connection first with retry
+    try {
+      await retryAsync(async () => {
+        return await qdrant.getCollections()
+      })
+      console.log('✅ Qdrant connection successful')
+    } catch (connectionError) {
+      console.error('❌ Qdrant connection failed after retries:', connectionError)
+      const errorMessage = connectionError instanceof Error ? connectionError.message : 'Unknown connection error'
+      throw new Error(`Qdrant connection failed: ${errorMessage}`)
+    }
     
     // Generate embedding from content
+    console.log('Generating embedding for material content...')
     const embedding = await generateEmbedding(material.content)
+    console.log('✅ Embedding generated successfully')
     
     // Prepare payload with proper relationships
     const payload = {
@@ -107,6 +180,8 @@ export async function upsertCourseMaterial(material: CourseMaterial) {
       updatedAt: new Date().toISOString(),
     }
 
+    console.log('Upserting to Qdrant collection:', collectionName)
+    
     // Upsert point with material ID as the primary key
     await qdrant.upsert(collectionName, {
       points: [
@@ -118,9 +193,16 @@ export async function upsertCourseMaterial(material: CourseMaterial) {
       ],
     })
 
-    console.log(`✅ Upserted material to Qdrant: ${material.title} (ID: ${material.id})`)
+    console.log(`✅ Successfully upserted material to Qdrant: ${material.title} (ID: ${material.id})`)
   } catch (error) {
     console.error('Error upserting to Qdrant:', error)
+    // Check if it's a connection timeout specifically
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorCode = (error as any)?.code
+    
+    if (errorMessage.includes('Connect Timeout') || errorCode === 'UND_ERR_CONNECT_TIMEOUT') {
+      throw new Error('Qdrant connection timeout - please check your network connection and Qdrant service status')
+    }
     throw error
   }
 }

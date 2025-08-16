@@ -49,22 +49,47 @@ export async function generateEmbeddings(
 ): Promise<number[][]> {
   try {
     const {
-      model = 'jina-embeddings-v2-base-en',
-      task = 'retrieval.passage',
+      model = 'jina-embeddings-v3', // Updated to v3 as per demo
+      task = 'text-matching', // Updated to text-matching as per demo
       encoding_format = 'float'
     } = options
 
+    // Validate environment variables
+    if (!process.env.JINA_API_KEY) {
+      throw new Error('JINA_API_KEY environment variable is not set')
+    }
+
+    console.log('Generating embeddings with Jina AI...', {
+      model,
+      task,
+      textLength: Array.isArray(text) ? text.length : text.length
+    })
+
     const response = await jinaClient.post<JinaEmbeddingResponse>('/embeddings', {
       model,
-      input: text,
+      input: text, // Can be string or array as per demo
       task,
       encoding_format
     })
 
+    if (!response.data || !response.data.data || response.data.data.length === 0) {
+      throw new Error('No embedding data returned from Jina AI')
+    }
+
+    console.log('Successfully generated embeddings:', response.data.data.length)
     return response.data.data.map(item => item.embedding)
   } catch (error) {
     console.error('Error generating embeddings with Jina AI:', error)
-    throw new Error('Failed to generate embeddings')
+    if (error instanceof Error) {
+      if ('response' in error) {
+        const axiosError = error as any
+        console.error('Response status:', axiosError.response?.status)
+        console.error('Response data:', axiosError.response?.data)
+      }
+      throw new Error(`Failed to generate embeddings: ${error.message}`)
+    } else {
+      throw new Error('Failed to generate embeddings: Unknown error')
+    }
   }
 }
 
