@@ -58,6 +58,8 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
+    "ignore-loader": "^0.1.2",
+    "null-loader": "^4.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

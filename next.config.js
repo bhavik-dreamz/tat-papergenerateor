@@ -16,6 +16,35 @@ const nextConfig = {
       ...config.resolve.fallback,
       "undici": false,
     };
+
+    // Exclude test files and data directories from dependencies
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    };
+
+    // Add module rules to ignore problematic files
+    config.module.rules.push(
+      {
+        test: /node_modules.*\/test\//,
+        use: 'null-loader'
+      },
+      {
+        test: /\.pdf$/,
+        use: 'null-loader'
+      }
+    );
+
+    // Ignore specific problem modules
+    config.externals.push(function ({ context, request }, callback) {
+      if (request && (
+        request.includes('/test/data/') ||
+        request.includes('test/data') ||
+        request.endsWith('.pdf')
+      )) {
+        return callback(null, 'commonjs ' + request);
+      }
+      callback();
+    });
     
     return config;
   },
