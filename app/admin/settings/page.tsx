@@ -9,7 +9,7 @@ import {
   BellIcon,
   GlobeAltIcon,
   CreditCardIcon,
-  DatabaseIcon,
+  CircleStackIcon,
   KeyIcon,
   EyeIcon,
   EyeSlashIcon,
@@ -142,7 +142,7 @@ export default function SettingsPage() {
     { id: 'security', name: 'Security', icon: ShieldCheckIcon },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
     { id: 'integrations', name: 'Integrations', icon: GlobeAltIcon },
-    { id: 'system', name: 'System', icon: DatabaseIcon }
+    { id: 'system', name: 'System', icon: CircleStackIcon }
   ]
 
   if (loading) {
@@ -485,7 +485,7 @@ export default function SettingsPage() {
                   {/* Pinecone Settings */}
                   <div className="border rounded-lg p-4">
                     <div className="flex items-center mb-4">
-                      <DatabaseIcon className="h-5 w-5 text-purple-600 mr-2" />
+                      <CircleStackIcon className="h-5 w-5 text-purple-600 mr-2" />
                       <h4 className="text-md font-medium text-gray-900">Pinecone Vector Database</h4>
                     </div>
                     <div className="space-y-4">

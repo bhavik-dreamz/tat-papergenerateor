@@ -1,16 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'],
+    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs', 'undici', '@qdrant/js-client-rest'],
   },
   images: {
     domains: ['localhost'],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // External undici for server-side
+    if (isServer) {
+      config.externals.push('undici');
+    }
+    
     config.resolve.fallback = {
       ...config.resolve.fallback,
       "undici": false,
     };
+    
     return config;
   },
   env: {

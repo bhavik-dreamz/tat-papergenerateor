@@ -12,7 +12,7 @@ import {
   ChartBarIcon,
   CreditCardIcon,
   ClockIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowRightIcon,

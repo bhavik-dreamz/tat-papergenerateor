@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '../../auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
@@ -51,13 +51,14 @@ export async function GET(request: NextRequest) {
       prisma.stripeSubscription.count({ where: { status: 'active' } }),
       prisma.paperRequest.count(),
       prisma.paperSubmission.count(),
-      prisma.stripeSubscription.aggregate({
+      prisma.stripeSubscription.findMany({
         where: { status: 'active' },
-        _sum: { amount: true }
+        include: { plan: { select: { price: true } } }
       })
     ])
 
-    // Get user growth data
+    // Calculate total revenue
+    const totalRevenueAmount = totalRevenue.reduce((sum, subscription) => sum + subscription.plan.price, 0)
     const userGrowth = await prisma.user.groupBy({
       by: ['createdAt'],
       where: {
@@ -89,19 +90,19 @@ export async function GET(request: NextRequest) {
     })
 
     // Get revenue data
-    const revenueData = await prisma.stripeSubscription.groupBy({
-      by: ['createdAt'],
+    const revenueData = await prisma.stripeSubscription.findMany({
       where: {
         createdAt: {
           gte: startDate
         },
         status: 'active'
       },
-      _sum: {
-        amount: true
-      },
-      _count: {
-        id: true
+      include: {
+        plan: {
+          select: {
+            price: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'asc'
@@ -164,10 +165,22 @@ export async function GET(request: NextRequest) {
       avgPerformance: Math.random() * 0.4 + 0.6 // Mock performance
     }))
 
-    const formattedRevenueData = revenueData.map((item: any) => ({
-      date: item.createdAt.toISOString().split('T')[0],
-      revenue: item._sum.amount || 0,
-      subscriptions: item._count.id
+    // Group revenue data by date and calculate totals
+    const revenueByDate = new Map();
+    revenueData.forEach(subscription => {
+      const date = subscription.createdAt.toISOString().split('T')[0];
+      if (!revenueByDate.has(date)) {
+        revenueByDate.set(date, { revenue: 0, subscriptions: 0 });
+      }
+      const existing = revenueByDate.get(date);
+      existing.revenue += subscription.plan.price;
+      existing.subscriptions += 1;
+    });
+
+    const formattedRevenueData = Array.from(revenueByDate.entries()).map(([date, data]) => ({
+      date,
+      revenue: data.revenue,
+      subscriptions: data.subscriptions
     }))
 
     const formattedRecentActivity = recentActivity.map((user: any) => ({
@@ -187,7 +200,7 @@ export async function GET(request: NextRequest) {
         totalSubscriptions,
         totalPaperRequests,
         totalSubmissions,
-        totalRevenue: totalRevenue._sum.amount || 0
+        totalRevenue: totalRevenueAmount
       },
       userGrowth: formattedUserGrowth,
       courseStats: formattedCourseStats,

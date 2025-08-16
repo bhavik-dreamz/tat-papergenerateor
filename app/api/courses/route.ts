@@ -112,11 +112,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Generate a unique course code
+    const courseCode = `${name.substring(0, 3).toUpperCase()}-${Date.now().toString().substring(-4)}`
+
     // Create course
     const course = await prisma.course.create({
       data: {
         name,
         description,
+        code: courseCode,
+        credits: 3, // Default credits
         level,
         boardOrUniversity,
         language: language || 'English',
