@@ -17,6 +17,7 @@ interface Material {
   type: string
   fileUrl: string
   fileSize: number
+  courseId: string
   createdAt: string
   course: {
     name: string
@@ -110,16 +111,16 @@ export default function MaterialManagement() {
 
       // Upload file if it's a new material or file has changed
       if (selectedFile) {
-        const formData = new FormData()
-        formData.append('file', selectedFile)
-        formData.append('title', formData.title)
-        formData.append('description', formData.description)
-        formData.append('type', formData.type)
-        formData.append('courseId', formData.courseId)
+        const uploadFormData = new FormData()
+        uploadFormData.append('file', selectedFile)
+        uploadFormData.append('title', formData.title)
+        uploadFormData.append('description', formData.description)
+        uploadFormData.append('type', formData.type)
+        uploadFormData.append('courseId', formData.courseId)
 
         const uploadResponse = await fetch('/api/admin/materials/upload', {
           method: 'POST',
-          body: formData,
+          body: uploadFormData,
         })
 
         if (!uploadResponse.ok) {
@@ -174,7 +175,7 @@ export default function MaterialManagement() {
       title: material.title,
       description: material.description,
       type: material.type,
-      courseId: material.course.id
+      courseId: material.courseId
     })
     setShowForm(true)
   }
