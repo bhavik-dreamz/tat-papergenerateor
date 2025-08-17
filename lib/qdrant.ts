@@ -302,8 +302,16 @@ export async function searchCourseMaterials(
 
 // Delete course material from Qdrant
 export async function deleteCourseMaterial(materialId: string) {
+  if (!isQdrantEnabled()) {
+    console.log('ℹ️ Qdrant is disabled - skipping vector database deletion')
+    return
+  }
+
   try {
-    const collectionName = 'course_materials'
+    const collectionName = process.env.QDRANT_COLLECTION || 'course_materials'
+    
+    // Test connection first (fail fast if unavailable)
+    await qdrant.getCollections()
     
     // Delete by material ID (which is the point ID)
     await qdrant.delete(collectionName, {

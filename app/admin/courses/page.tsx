@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { redirect } from 'next/navigation'
 import { 
   PlusIcon, 
@@ -40,6 +41,7 @@ interface Course {
 
 export default function SuperAdminCourses() {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -123,17 +125,7 @@ export default function SuperAdminCourses() {
   }
 
   const handleEdit = (course: Course) => {
-    setEditingCourse(course)
-    setFormData({
-      name: course.name,
-      description: course.description,
-      code: course.code,
-      credits: course.credits,
-      level: course.level,
-      boardOrUniversity: course.boardOrUniversity,
-      language: course.language
-    })
-    setShowForm(true)
+    router.push(`/admin/courses/${course.id}/edit`)
   }
 
   const handleDelete = async (courseId: string) => {

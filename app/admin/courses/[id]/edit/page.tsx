@@ -13,6 +13,10 @@ import {
   TrashIcon,
   EyeIcon,
   EyeSlashIcon,
+  MagnifyingGlassIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpDownIcon,
 } from '@heroicons/react/24/outline'
 
 const courseSchema = z.object({
@@ -54,6 +58,14 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
   const [materialTitle, setMaterialTitle] = useState('')
   const [materialDescription, setMaterialDescription] = useState('')
   const [materialYear, setMaterialYear] = useState<number | undefined>()
+  
+  // Search and pagination states
+  const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'SYLLABUS' | 'OLD_PAPER' | 'REFERENCE'>('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(5)
+  const [sortBy, setSortBy] = useState<'title' | 'type' | 'createdAt'>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   const {
     register,
@@ -66,6 +78,44 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
   })
 
   const isActive = watch('isActive')
+
+  // Filter and sort materials
+  const filteredMaterials = materials.filter(material => {
+    const matchesSearch = material.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      material.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      material.type.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesType = typeFilter === 'ALL' || material.type === typeFilter
+    
+    return matchesSearch && matchesType
+  })
+
+  const sortedMaterials = [...filteredMaterials].sort((a, b) => {
+    let aValue: any = a[sortBy]
+    let bValue: any = b[sortBy]
+
+    if (sortBy === 'createdAt') {
+      aValue = new Date(aValue).getTime()
+      bValue = new Date(bValue).getTime()
+    }
+
+    if (sortOrder === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+    }
+  })
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedMaterials.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedMaterials = sortedMaterials.slice(startIndex, endIndex)
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, typeFilter])
 
   useEffect(() => {
     if (status === 'loading') return
@@ -490,53 +540,282 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
 
         {/* Materials List */}
         <div className="mt-8 bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Course Materials</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Course Materials</h2>
+            <div className="text-sm text-gray-500">
+              {sortedMaterials.length} total materials
+              {(searchTerm || typeFilter !== 'ALL') && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                  {materials.length - sortedMaterials.length} filtered out
+                </span>
+              )}
+            </div>
+          </div>
           
-          {materials.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No materials uploaded yet.</p>
+          {/* Search and Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search materials by title, description, or type..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            
+            {/* Filter and Sort Controls */}
+            <div className="flex gap-2">
+              {/* Type Filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              >
+                <option value="ALL">All Types</option>
+                <option value="SYLLABUS">Syllabus</option>
+                <option value="OLD_PAPER">Old Papers</option>
+                <option value="REFERENCE">Reference</option>
+              </select>
+              
+              {/* Sort By */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              >
+                <option value="createdAt">Date Created</option>
+                <option value="title">Title</option>
+                <option value="type">Type</option>
+              </select>
+              
+              {/* Sort Order */}
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+              >
+                <ChevronUpDownIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchTerm || typeFilter !== 'ALL') && (
+            <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-200">
+              <span className="text-sm text-gray-600">Active filters:</span>
+              
+              {searchTerm && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Search: "{searchTerm}"
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-600"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              
+              {typeFilter !== 'ALL' && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Type: {typeFilter.replace('_', ' ')}
+                  <button
+                    onClick={() => setTypeFilter('ALL')}
+                    className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-green-400 hover:bg-green-200 hover:text-green-600"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              
+              <button
+                onClick={() => {
+                  setSearchTerm('')
+                  setTypeFilter('ALL')
+                }}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
+          {/* Materials List */}
+          {paginatedMaterials.length === 0 ? (
+            <div className="text-center py-12">
+              {searchTerm || typeFilter !== 'ALL' ? (
+                <div>
+                  <p className="text-gray-500 mb-2">No materials match your current filters.</p>
+                  <button
+                    onClick={() => {
+                      setSearchTerm('')
+                      setTypeFilter('ALL')
+                    }}
+                    className="text-primary-600 hover:text-primary-800 text-sm"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-500">No materials uploaded yet.</p>
+              )}
+            </div>
           ) : (
-            <div className="space-y-4">
-              {materials.map((material) => (
-                <div
-                  key={material.id}
-                  className="border border-gray-200 rounded-lg p-4 flex items-center justify-between"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        material.type === 'SYLLABUS' ? 'bg-blue-100 text-blue-800' :
-                        material.type === 'OLD_PAPER' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {material.type}
-                      </span>
-                      {material.year && (
-                        <span className="text-sm text-gray-500">({material.year})</span>
-                      )}
+            <>
+              <div className="space-y-4">
+                {paginatedMaterials.map((material) => (
+                  <div
+                    key={material.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            material.type === 'SYLLABUS' ? 'bg-blue-100 text-blue-800' :
+                            material.type === 'OLD_PAPER' ? 'bg-green-100 text-green-800' :
+                            'bg-purple-100 text-purple-800'
+                          }`}>
+                            {material.type.replace('_', ' ')}
+                          </span>
+                          {material.year && (
+                            <span className="text-sm text-gray-500">({material.year})</span>
+                          )}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            material.isActive 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {material.isActive ? (
+                              <>
+                                <EyeIcon className="w-3 h-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <EyeSlashIcon className="w-3 h-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">
+                          {material.title}
+                        </h3>
+                        
+                        {material.description && (
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {material.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center text-xs text-gray-500 space-x-4">
+                          <span>
+                            Uploaded: {new Date(material.createdAt).toLocaleDateString()}
+                          </span>
+                          {material.fileUrl && (
+                            <a
+                              href={material.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-600 hover:text-primary-800"
+                            >
+                              View File
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button
+                          onClick={() => deleteMaterial(material.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Delete material"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mt-1">
-                      {material.title}
-                    </h3>
-                    {material.description && (
-                      <p className="text-sm text-gray-600 mt-1">{material.description}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      Uploaded: {new Date(material.createdAt).toLocaleDateString()}
-                    </p>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-6">
+                  <div className="flex flex-1 justify-between sm:hidden">
                     <button
-                      onClick={() => deleteMaterial(material.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md"
-                      title="Delete material"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <TrashIcon className="h-5 w-5" />
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
                     </button>
                   </div>
+                  
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                        <span className="font-medium">
+                          {Math.min(endIndex, sortedMaterials.length)}
+                        </span>{' '}
+                        of <span className="font-medium">{sortedMaterials.length}</span> results
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Previous</span>
+                          <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              page === currentPage
+                                ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        
+                        <button
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Next</span>
+                          <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>

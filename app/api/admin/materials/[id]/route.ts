@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { deleteCourseMaterial } from '@/lib/qdrant'
+import { deleteCourseMaterial, isQdrantEnabled } from '@/lib/qdrant'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
+import { existsSync } from 'fs'
 
 export async function PUT(
   request: NextRequest,
@@ -111,12 +112,20 @@ export async function DELETE(
       )
     }
 
-    // Delete from Qdrant first
-    try {
-      await deleteCourseMaterial(params.id)
-    } catch (qdrantError) {
-      console.error('Error deleting from Qdrant:', qdrantError)
-      // Continue with database deletion even if Qdrant deletion fails
+    // Delete from Qdrant first (with improved error handling)
+    if (isQdrantEnabled()) {
+      try {
+        console.log('🔄 Attempting to delete material from Qdrant vector database...')
+        await deleteCourseMaterial(params.id)
+        console.log('✅ Successfully deleted material from Qdrant')
+      } catch (qdrantError) {
+        const errorMessage = qdrantError instanceof Error ? qdrantError.message : 'Unknown error'
+        console.error('⚠️ Warning: Could not delete from Qdrant vector database:', errorMessage)
+        console.log('📝 Continuing with main database deletion...')
+        // Continue with database deletion even if Qdrant deletion fails
+      }
+    } else {
+      console.log('ℹ️ Qdrant is disabled - skipping vector database deletion')
     }
 
     // Delete the file from storage if it exists
@@ -126,22 +135,41 @@ export async function DELETE(
         const fileName = existingMaterial.fileUrl.split('/').pop()
         if (fileName) {
           const filePath = join(uploadDir, fileName)
-          await unlink(filePath)
+          
+          // Check if file exists before trying to delete
+          if (existsSync(filePath)) {
+            await unlink(filePath)
+            console.log('✅ File deleted successfully:', fileName)
+          } else {
+            console.log('ℹ️ File not found, may have been deleted already:', fileName)
+          }
         }
       } catch (fileError) {
-        console.error('Error deleting file:', fileError)
+        const errorMessage = fileError instanceof Error ? fileError.message : 'Unknown error'
+        console.error('⚠️ Warning: Could not delete file:', errorMessage)
+        console.log('📝 Continuing with database deletion...')
         // Continue with database deletion even if file deletion fails
       }
     }
 
-    // Delete from database
-    await prisma.courseMaterial.delete({
-      where: { id: params.id }
-    })
+    // Delete from database (this should be the last step)
+    try {
+      await prisma.courseMaterial.delete({
+        where: { id: params.id }
+      })
+      console.log('✅ Material deleted successfully from database')
+    } catch (dbError) {
+      // This shouldn't happen since we checked existence above, but handle it gracefully
+      if ((dbError as any)?.code === 'P2025') {
+        console.log('ℹ️ Material was already deleted from database')
+        return NextResponse.json({ message: 'Material not found or already deleted' }, { status: 404 })
+      }
+      throw dbError // Re-throw other database errors
+    }
 
     return NextResponse.json({ message: 'Material deleted successfully' })
   } catch (error) {
-    console.error('Error deleting material:', error)
+    console.error('❌ Error deleting material:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

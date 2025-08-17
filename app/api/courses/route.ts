@@ -5,11 +5,40 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession()
+    
+    // For public access, return all active courses with basic info
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const courses = await prisma.course.findMany({
+        where: { isActive: true },
+        include: {
+          _count: {
+            select: {
+              materials: {
+                where: { isActive: true }
+              },
+              enrollments: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      return NextResponse.json(courses.map(course => ({
+        id: course.id,
+        name: course.name,
+        description: course.description,
+        code: course.code,
+        credits: course.credits,
+        level: course.level,
+        boardOrUniversity: course.boardOrUniversity,
+        language: course.language,
+        isActive: course.isActive,
+        createdAt: course.createdAt,
+        _count: course._count
+      })))
     }
 
-    // Get courses based on user role
+    // Get courses based on user role for authenticated users
     let courses
     if (session.user.role === 'SUPER_ADMIN') {
       // Super admin can see all courses
@@ -20,6 +49,12 @@ export async function GET(request: NextRequest) {
             select: {
               name: true,
               email: true,
+            }
+          },
+          _count: {
+            select: {
+              materials: true,
+              enrollments: true
             }
           }
         },
@@ -47,6 +82,12 @@ export async function GET(request: NextRequest) {
               name: true,
               email: true,
             }
+          },
+          _count: {
+            select: {
+              materials: true,
+              enrollments: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -68,24 +109,32 @@ export async function GET(request: NextRequest) {
               name: true,
               email: true,
             }
+          },
+          _count: {
+            select: {
+              materials: true,
+              enrollments: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
       })
     }
 
-    return NextResponse.json({
-      courses: courses.map(course => ({
-        id: course.id,
-        name: course.name,
-        description: course.description,
-        level: course.level,
-        boardOrUniversity: course.boardOrUniversity,
-        language: course.language,
-        createdBy: course.createdBy.name,
-        createdAt: course.createdAt,
-      }))
-    })
+    return NextResponse.json(courses.map(course => ({
+      id: course.id,
+      name: course.name,
+      description: course.description,
+      code: course.code,
+      credits: course.credits,
+      level: course.level,
+      boardOrUniversity: course.boardOrUniversity,
+      language: course.language,
+      isActive: course.isActive,
+      createdBy: course.createdBy.name,
+      createdAt: course.createdAt,
+      _count: course._count
+    })))
 
   } catch (error) {
     console.error('Error fetching courses:', error)

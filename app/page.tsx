@@ -1,5 +1,24 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { CheckIcon } from '@heroicons/react/24/outline'
+import { useRouter } from 'next/navigation'
+import { CheckIcon, AcademicCapIcon, BookOpenIcon, ClockIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+
+interface Course {
+  id: string
+  name: string
+  description: string
+  code: string
+  credits: number
+  level: string
+  boardOrUniversity: string
+  language: string
+  _count: {
+    materials: number
+    enrollments: number
+  }
+}
 
 const features = [
   {
@@ -76,30 +95,31 @@ const plans = [
 ]
 
 export default function HomePage() {
+  const router = useRouter()
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchFeaturedCourses()
+  }, [])
+
+  const fetchFeaturedCourses = async () => {
+    try {
+      const response = await fetch('/api/courses')
+      if (response.ok) {
+        const courses = await response.json()
+        // Show first 3 courses as featured
+        setFeaturedCourses(courses.slice(0, 3))
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="bg-white">
-      {/* Header */}
-      <header className="absolute inset-x-0 top-0 z-50">
-        <nav className="flex items-center justify-between p-6 lg:px-8" aria-label="Global">
-          <div className="flex lg:flex-1">
-            <Link href="/" className="-m-1.5 p-1.5">
-              <span className="text-xl font-bold text-primary-600">TAT Paper Generator</span>
-            </Link>
-          </div>
-          <div className="flex gap-x-12">
-            <Link href="/auth/signin" className="text-sm font-semibold leading-6 text-gray-900">
-              Sign in
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
-            >
-              Sign up
-            </Link>
-          </div>
-        </nav>
-      </header>
-
       {/* Hero section */}
       <div className="relative isolate pt-14">
         <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80" aria-hidden="true">
@@ -130,9 +150,12 @@ export default function HomePage() {
                 >
                   Get started
                 </Link>
-                <Link href="#features" className="text-sm font-semibold leading-6 text-gray-900">
-                  Learn more <span aria-hidden="true">→</span>
-                </Link>
+                <button
+                  onClick={() => router.push('/courses')}
+                  className="text-sm font-semibold leading-6 text-gray-900 flex items-center"
+                >
+                  Browse courses <ArrowRightIcon className="h-4 w-4 ml-1" />
+                </button>
               </div>
             </div>
           </div>
@@ -145,6 +168,92 @@ export default function HomePage() {
                 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
             }}
           />
+        </div>
+      </div>
+
+      {/* Featured Courses section */}
+      <div className="mx-auto mt-16 max-w-7xl px-6 sm:mt-24 lg:px-8">
+        <div className="mx-auto max-w-2xl lg:text-center">
+          <h2 className="text-base font-semibold leading-7 text-primary-600">Featured Courses</h2>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Explore our popular courses
+          </p>
+          <p className="mt-6 text-lg leading-8 text-gray-600">
+            Start generating papers for these featured courses with comprehensive materials and resources.
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex flex-col bg-white p-6 shadow-sm ring-1 ring-gray-900/10 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3 mb-4"></div>
+                <div className="h-8 bg-gray-200 rounded w-24"></div>
+              </div>
+            ))}
+          </div>
+        ) : featuredCourses.length > 0 ? (
+          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-8">
+            {featuredCourses.map((course) => (
+              <div
+                key={course.id}
+                className="flex flex-col bg-white p-6 shadow-sm ring-1 ring-gray-900/10 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/courses/${course.id}`)}
+              >
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {course.name}
+                  </h3>
+                  <p className="text-sm text-primary-600 font-medium mb-1">{course.code}</p>
+                  <p className="text-sm text-gray-600 mb-2">{course.boardOrUniversity}</p>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4 flex-1 line-clamp-3">
+                  {course.description}
+                </p>
+
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <span className="flex items-center">
+                    <ClockIcon className="h-4 w-4 mr-1" />
+                    {course.credits} Credits
+                  </span>
+                  <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                    {course.level}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100">
+                  <span>{course.language}</span>
+                  <div className="flex items-center space-x-3">
+                    {course._count?.materials > 0 && (
+                      <span className="flex items-center">
+                        <BookOpenIcon className="h-3 w-3 mr-1" />
+                        {course._count.materials} Materials
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mx-auto mt-16 text-center">
+            <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-600">No courses available yet. Check back soon!</p>
+          </div>
+        )}
+
+        <div className="mt-10 flex justify-center">
+          <button
+            onClick={() => router.push('/courses')}
+            className="rounded-md bg-primary-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 flex items-center"
+          >
+            View All Courses
+            <ArrowRightIcon className="h-4 w-4 ml-2" />
+          </button>
         </div>
       </div>
 
