@@ -24,19 +24,6 @@ async function getCourse(id: string) {
             },
             enrollments: true
           }
-        },
-        materials: {
-          where: { isActive: true },
-          select: {
-            id: true,
-            title: true,
-            type: true,
-            year: true
-          },
-          orderBy: [
-            { type: 'asc' },
-            { createdAt: 'desc' }
-          ]
         }
       }
     })
@@ -60,19 +47,14 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
   }
 
   const title = `${course.name} - TAT Paper Generator`
-  const materialTypes = course.materials.map(m => m.type).filter((type, index, arr) => arr.indexOf(type) === index)
-  const materialTypesText = materialTypes.length > 0 
-    ? ` Includes ${materialTypes.join(', ').toLowerCase().replace(/_/g, ' ')}.`
-    : ''
-  
   const description = course.description 
-    ? `${course.description.substring(0, 130)}...${materialTypesText}`
-    : `Learn ${course.name} with AI-powered paper generation and automated grading. ${course.level} level course from ${course.boardOrUniversity}.${materialTypesText} ${course._count.materials} study materials available.`
+    ? `${course.description.substring(0, 155)}...`
+    : `Learn ${course.name} with AI-powered paper generation and automated grading. ${course.level} level course from ${course.boardOrUniversity}.`
 
   return {
     title,
     description,
-    keywords: `${course.name}, ${course.code}, ${course.level}, ${course.boardOrUniversity}, ${course.language}, course, exam papers, AI paper generation, study materials, course materials, syllabus, previous papers, ${course._count.materials} materials`,
+    keywords: `${course.name}, ${course.code}, ${course.level}, ${course.boardOrUniversity}, ${course.language}, course, exam papers, AI paper generation`,
     openGraph: {
       title,
       description,
@@ -123,7 +105,6 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     url: `/courses/${course.id}`,
     coursePrerequisites: course.level,
     timeRequired: `${course.credits} credits`,
-    numberOfCredits: course.credits,
     aggregateRating: course._count.enrollments > 0 ? {
       '@type': 'AggregateRating',
       ratingValue: '4.5',
@@ -133,25 +114,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       '@type': 'Offer',
       category: 'Educational Service',
       availability: 'https://schema.org/InStock',
-    },
-    courseMaterial: course.materials.map(material => ({
-      '@type': 'LearningResource',
-      name: material.title,
-      learningResourceType: material.type.toLowerCase().replace('_', ' '),
-      dateCreated: material.year?.toString(),
-    })),
-    keywords: [
-      course.name,
-      course.code,
-      course.level,
-      course.boardOrUniversity,
-      course.language,
-      'course materials',
-      'study materials',
-      'exam papers',
-      'syllabus',
-      ...course.materials.map(m => m.type.toLowerCase().replace('_', ' '))
-    ].join(', ')
+    }
   }
 
   return (

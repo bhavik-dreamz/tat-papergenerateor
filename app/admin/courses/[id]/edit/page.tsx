@@ -313,7 +313,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                 <input
                   type="text"
                   {...register('name')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                 />
                 {errors.name && (
                   <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -342,7 +342,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                   <input
                     type="text"
                     {...register('code')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                   />
                   {errors.code && (
                     <p className="mt-1 text-sm text-red-600">{errors.code.message}</p>
@@ -358,7 +358,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                     {...register('credits', { valueAsNumber: true })}
                     min="1"
                     max="10"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                   />
                   {errors.credits && (
                     <p className="mt-1 text-sm text-red-600">{errors.credits.message}</p>
@@ -375,7 +375,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                     type="text"
                     {...register('level')}
                     placeholder="e.g., Undergraduate, Graduate"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                   />
                   {errors.level && (
                     <p className="mt-1 text-sm text-red-600">{errors.level.message}</p>
@@ -390,7 +390,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                     type="text"
                     {...register('boardOrUniversity')}
                     placeholder="e.g., Cambridge, MIT"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                   />
                   {errors.boardOrUniversity && (
                     <p className="mt-1 text-sm text-red-600">{errors.boardOrUniversity.message}</p>
@@ -406,7 +406,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                   type="text"
                   {...register('language')}
                   placeholder="e.g., English"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                 />
                 {errors.language && (
                   <p className="mt-1 text-sm text-red-600">{errors.language.message}</p>
@@ -463,7 +463,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                   value={materialTitle}
                   onChange={(e) => setMaterialTitle(e.target.value)}
                   placeholder="e.g., Course Syllabus 2024"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                 />
               </div>
 
@@ -476,7 +476,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                   onChange={(e) => setMaterialDescription(e.target.value)}
                   rows={3}
                   placeholder="Brief description of the material"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                 />
               </div>
 
@@ -490,7 +490,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                     value={materialYear || ''}
                     onChange={(e) => setMaterialYear(e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="e.g., 2023"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
                   />
                 </div>
               )}
@@ -564,7 +564,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search materials by title, description, or type..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900"
               />
             </div>
             

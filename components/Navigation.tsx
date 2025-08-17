@@ -127,8 +127,8 @@ export default function Navigation() {
             href="/"
             className={`block px-3 py-2 rounded-md text-base font-medium ${
               pathname === '/' 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                ? 'text-primary-600 bg-primary-50' 
+                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
             }`}
           >
             Home
@@ -137,8 +137,8 @@ export default function Navigation() {
             href="/courses"
             className={`block px-3 py-2 rounded-md text-base font-medium ${
               pathname?.startsWith('/courses') 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                ? 'text-primary-600 bg-primary-50' 
+                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
             }`}
           >
             Browse Courses
@@ -149,8 +149,8 @@ export default function Navigation() {
                 href="/dashboard"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
                   pathname === '/dashboard' 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                    ? 'text-primary-600 bg-primary-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 Dashboard
@@ -160,8 +160,8 @@ export default function Navigation() {
                   href="/admin"
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
                     pathname?.startsWith('/admin') 
-                      ? 'text-blue-600 bg-blue-50' 
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                      ? 'text-primary-600 bg-primary-50' 
+                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                   }`}
                 >
                   Admin

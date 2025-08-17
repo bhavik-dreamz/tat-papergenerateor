@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
@@ -7,13 +6,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
-    
-    // Require authentication to view course materials
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-
     // Find the course first to ensure it exists and is active
     const course = await prisma.course.findUnique({
       where: { 
@@ -26,11 +18,20 @@ export async function GET(
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
 
-    // Get materials for this course
+    // Get materials for this course - public endpoint but limited data
     const materials = await prisma.courseMaterial.findMany({
       where: {
         courseId: params.id,
         isActive: true
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        type: true,
+        year: true,
+        createdAt: true,
+        // Don't include fileUrl or content - keep it secure
       },
       orderBy: [
         { type: 'asc' },
@@ -38,21 +39,23 @@ export async function GET(
       ]
     })
 
-    // Return materials without direct file URLs - use secure viewing endpoint instead
+    // Return public material info - no sensitive data
     return NextResponse.json(materials.map((material: any) => ({
       id: material.id,
       title: material.title,
       description: material.description,
       type: material.type,
-      // Don't expose direct fileUrl for security
-      hasFile: !!material.fileUrl,
       year: material.year,
-      isActive: material.isActive,
-      createdAt: material.createdAt
+      createdAt: material.createdAt,
+      hasFile: true, // We'll show all materials have files to encourage login
+      requiresAuth: true, // Flag to indicate authentication needed
     })))
 
   } catch (error) {
     console.error('Error fetching course materials:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to fetch course materials' },
+      { status: 500 }
+    )
   }
 }
