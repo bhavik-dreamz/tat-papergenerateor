@@ -2,8 +2,8 @@ const { QdrantClient } = require('@qdrant/js-client-rest');
 
 async function testQdrantConnection() {
   const qdrant = new QdrantClient({
-    url: 'https://e808fcd7-a692-4089-a99c-e0eff7b21d36.us-west-1-0.aws.cloud.qdrant.io:6333',
-    apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.XUDyggqVccd0fsolpLtubKHNrUzdBX6i7jumdqPzMwE',
+    url: '',
+    apiKey: '',
     timeout: 30000,
     checkCompatibility: false,
   });
