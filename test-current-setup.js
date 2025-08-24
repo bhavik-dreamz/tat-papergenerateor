@@ -19,14 +19,14 @@ function parseQdrantUrl(url) {
 }
 
 async function testCurrentQdrantSetup() {
-  const qdrantUrl = 'https://e808fcd7-a692-4089-a99c-e0eff7b21d36.us-west-1-0.aws.cloud.qdrant.io:6333'
+  const qdrantUrl = ''
   const { host, port, https } = parseQdrantUrl(qdrantUrl)
   
   const client = new QdrantClient({
     host,
     port,
     https,
-    apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.9oNCV90-ut5tl_I4WA6-xKEaa8DV8aOcl6HdnjnNlyc',
+    apiKey: '',
     timeout: 60000
   });
 
