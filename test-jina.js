@@ -9,7 +9,7 @@ async function testJinaAPI() {
     }, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer jina_37141ab48ae547edba0447184c2f6c46bRnWHirr4gfBZAfMD5jcwm3DpR0G'
+        'Authorization': ''
       }
     });
 
