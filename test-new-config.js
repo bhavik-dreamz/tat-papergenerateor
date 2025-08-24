@@ -28,7 +28,7 @@ async function testNewQdrantConfig() {
     host,
     port,
     https,
-    apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.9oNCV90-ut5tl_I4WA6-xKEaa8DV8aOcl6HdnjnNlyc'
+    apiKey: ''
   });
 
   try {
